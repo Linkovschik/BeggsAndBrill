@@ -35,6 +35,9 @@
     <ClInclude Include="IPVTBeggsAndBrill.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="BeggsAndBrill.rc">

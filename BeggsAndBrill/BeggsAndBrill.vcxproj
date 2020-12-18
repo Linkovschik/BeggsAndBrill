@@ -156,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BeggsAndBrillAlgorithm.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="IPVTBeggsAndBrill.h" />
     <ClInclude Include="IReadableBeggsAndBrill.h" />
     <ClInclude Include="resource.h" />
