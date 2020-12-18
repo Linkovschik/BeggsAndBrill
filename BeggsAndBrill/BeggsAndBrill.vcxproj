@@ -152,6 +152,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BeggsAndBrill.cpp" />
+    <ClCompile Include="BeggsAndBrillAlgorithm.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BeggsAndBrillAlgorithm.h" />
+    <ClInclude Include="IPVTBeggsAndBrill.h" />
+    <ClInclude Include="IReadableBeggsAndBrill.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="BeggsAndBrill.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
