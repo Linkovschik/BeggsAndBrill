@@ -3,16 +3,19 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <cassert>
+#include "IHydraulicСomputationStrategy.h"
 #include "Constants.h"
 #include "IReadableBeggsAndBrill.h"
 #include "IPVTBeggsAndBrill.h"
 
 
-class BeggsAndBrillAlgorithm
+class BeggsAndBrillAlgorithm : public IHydraulicСomputationStrategy
 {
 public:
 	//Execute - шаблонный метод, не должен переопределяться
-	double Execute(const IReadableBeggsAndBrill& tube);
+	virtual void Execute(const IReadableBeggsAndBrill& tube) override;
 protected:
 	std::string file_name;
 
@@ -39,7 +42,7 @@ protected:
 		double volume_debit_normal;				//объёмный дебит при н.у. (q_normal)
 		double volume_coefficient;				//объёмный коэффициент (B_o и B_w у нефти и воды соотв.)
 		double gas_solubility;					//растворимость газа (R_s, R_sw в нефти и воде соотв.)
-		double speed_reduced;					//приведённая скорость (v_sl и v_sg у жикости и газа соотв.)
+		double reduced_speed;					//приведённая скорость (v_sg у газа)
 		double viscosity;						//вязкость (mu)
 		double toughness;						//плотность (ro)
 		double surface_tension;					//поверхностное натяжение (delt)
@@ -48,17 +51,87 @@ protected:
 	//информация о других данных, расчитанных в алгоритме
 	struct MixtureInfo {
 
-		double speed;								//скорость смеси (v_m)
-		double lambda;								//объёмное содержание жидкости (lambda)
-		double viscosity_liquid;					//вязкость смеси (mu)
-		double toughness_liquid;					//плотность смеси (ro)
-		double surface_tension_liquid;				//поверхностное натяжение смеси (delt)
-		double viscosity_secondphase;				//вязкость смеси  (двухфазн.) (mu)
-		double toughness_secondphase;				//плотность смеси (двухфазн) (ro) 
-		double froud_number;						//число Фруда (N_fr)
-		double liquid_speed_index;					//показатель скорости жидкости (N_lv)
+		double reduced_speed;					//приведённая скорость (v_sl у жидкости)
+		double speed;							//скорость смеси (v_m)
+		double lambda;							//объёмное содержание жидкости (lambda)
+		double viscosity_liquid;				//вязкость смеси (mu_l)
+		double toughness_liquid;				//плотность смеси (ro_l)
+		double surface_tension_liquid;			//поверхностное натяжение смеси (delt)
+		double viscosity_secondphase;			//вязкость смеси  (двухфазн.) (mu_n)
+		double toughness_secondphase;			//плотность смеси (двухфазн) (ro_n) 
+		double froud_number;					//число Фруда (N_fr)
+		double liquid_speed_index;				//показатель скорости жидкости (N_lv)
+	};
+
+	//гранцы потока
+	struct FlowBorders {
+		double L1, L2, L3, L4;
+	};
+
+	//состояние потока
+	class FlowState {
+	public:
+		//конструктор
+		FlowState(const MixtureInfo* ptr_mixture_info);
+		//деструктор
+		virtual ~FlowState();
+
+		//возвращает объемное содержание жидкости с поправкой на угол наклона
+		double GetVolumetric_content_liquid_angled(const IReadableBeggsAndBrill& tube);
+
+		//возвращает true, если исходные данные подохдят для этого режима
+		virtual bool ModeChecking(const FlowBorders& borders) = 0;
+	protected:
+		const MixtureInfo* ptr_mixture;							//указатель на структуру "смесь"
+		double a, b, c;											//параметры для расчёта объёмного содержания жидкости
+		double e_down_up, f_down_up, g_down_up, h_down_up;		//параметры для расчёта некоего коэффициента C (снизу_вверх)
+		double e_up_down, f_up_down, g_up_down, h_up_down;		//параметры для расчёта некоего коэффициента C (сверху_вниз)
+	private:
+		//расчёт объёмного содержания жикости без поправки на угол
+		virtual double GetVolumetric_content_liquid_not_angled();
+		//возвращает значение коэффициента C
+		virtual double GetC_Coefficient(const Flow::FlowDirection& flow_direction);
+		//расчёт поправочного коэффициента на угол наклона трубы (пси)
+		virtual double GetAngleCorrectionCoefficient(const IReadableBeggsAndBrill & tube);
+	};
+
+	//разделённый режим
+	class DividedFlowState : public FlowState {
+	public:
+		//конструктор
+		DividedFlowState(const MixtureInfo* ptr_mixture_info);
+		//деструктор
+		virtual ~DividedFlowState();
+
+		virtual bool ModeChecking(const FlowBorders& borders) override;
+	};
+
+	//прерывистый режим
+	class IntermittentFlowState : public FlowState {
+	public:
+		//конструктор
+		IntermittentFlowState(const MixtureInfo* ptr_mixture_info);
+		//деструктор
+		virtual ~IntermittentFlowState();
+
+		virtual bool ModeChecking(const FlowBorders& borders) override;
+	};
+
+	//распределённый режим
+	class DistributedFlowState : public FlowState {
+	public:
+		//конструктор
+		DistributedFlowState(const MixtureInfo* ptr_mixture_info);
+		//деструктор
+		virtual ~DistributedFlowState();
+
+		virtual bool ModeChecking(const FlowBorders& borders) override;
+
+		virtual double GetC_Coefficient(const Flow::FlowDirection& flow_direction) override;
+		virtual double GetAngleCorrectionCoefficient(const IReadableBeggsAndBrill & tube) override;
 	};
 private:
+	virtual void Update() override;
 
 	//считывание начальных значений (параметров трубы)
 	virtual void ReadPipeParameters(const IReadableBeggsAndBrill& tube, 
@@ -87,7 +160,7 @@ private:
 	//вычисление приведенной скорости жидкости и газа
 	virtual void ReducedSpeedCount(const FlowInfo& oilFlow, const FlowInfo& waterFlow, const FlowInfo& gasFlow,
 		const PipeParameters& pipe_parameters,
-		double& out_reduced_speed_water, double& out_reduced_speed_gas);
+		double& out_reduced_speed_liquid, double& out_reduced_speed_gas);
 
 	//вычисление скорости смеси
 	virtual void MixtureSpeedCount(const FlowInfo& waterFlow, const FlowInfo& gasFlow, 
@@ -123,6 +196,44 @@ private:
 		double& out_froud_number);
 
 	//расчет показателя скорости жидкости
-	virtual
-};
+	virtual void LiquidIndexCount(const MixtureInfo& mixture,
+		double& out_liquid_speed_index);
 
+	//расчёт границ режимом потока
+	virtual void FlowBordersCount(const MixtureInfo& mixture,
+		double& out_L1, double& out_L2, double& out_L3, double& out_L4);
+
+	//объемное содержание жидкости с поправкой на угол наклона
+	virtual void VolumeCorrectionLiquidCount(const IReadableBeggsAndBrill& tube, const MixtureInfo& mixture, const FlowBorders& borders,
+		double& out_volume_correction_liquid);
+
+	//использовать поправку для объемного содержания жидкости (Payne)
+	virtual void PayneVolumeCorrectionCount(const IReadableBeggsAndBrill& tube, const double& volume_correction_liquid,
+		double &out_payne_corrected_vlume_correction_liquid);
+
+	//Вычисление числа Рейнольдса
+	virtual void RaynoldsNumberCount(const MixtureInfo& mixture, const PipeParameters& pipe_parameters,
+		double& out_raynolds_number);
+
+	//на основе шероховатости и числа Рейнольдса определяем значение нормирующего коэффициента трения
+	virtual void NormalizingFrictionCoefficientCount(const IReadableBeggsAndBrill& tube, const PipeParameters& pipe_parameters, 
+		const double& raynolds_number,
+		double& out_normalizing_friction_coefficient);
+
+	//вычисляем параметр y
+	double GetY(const double& lambda, const double& volume_correction_liquid);
+
+	//вычисляем параметр s
+	double GetS(const double& y);
+
+	//вычисляем коэффициент трения двухфазного потока
+	virtual void FrictionCoefficientCount(const MixtureInfo& mixture, const double& volume_correction_liquid,
+		const double& normilizing_friction_coefficient,
+		double& out_friction_coefficient);
+
+	//вычисляем градиент давления
+	virtual void PressureGradientCount(const IReadableBeggsAndBrill & tube, 
+		const PipeParameters& pip_parameters, const MixtureInfo& mixture, const FlowInfo& gasFlow,
+		const double& friction_coefficient, const double& volume_correction_liquid,
+		double& out_pressure_gradient);
+}; 

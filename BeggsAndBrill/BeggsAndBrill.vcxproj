@@ -153,10 +153,12 @@
   <ItemGroup>
     <ClCompile Include="BeggsAndBrill.cpp" />
     <ClCompile Include="BeggsAndBrillAlgorithm.cpp" />
+    <ClCompile Include="IHydraulicСomputationStrategy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BeggsAndBrillAlgorithm.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="IHydraulicСomputationStrategy.h" />
     <ClInclude Include="IPVTBeggsAndBrill.h" />
     <ClInclude Include="IReadableBeggsAndBrill.h" />
     <ClInclude Include="resource.h" />

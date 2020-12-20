@@ -21,6 +21,9 @@
     <ClCompile Include="BeggsAndBrillAlgorithm.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="IHydraulicСomputationStrategy.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BeggsAndBrillAlgorithm.h">
@@ -36,6 +39,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Constants.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="IHydraulicСomputationStrategy.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
