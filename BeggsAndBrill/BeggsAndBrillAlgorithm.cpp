@@ -1,5 +1,21 @@
 #include "BeggsAndBrillAlgorithm.h"
 
+BeggsAndBrillAlgorithm* BeggsAndBrillAlgorithm::singleton = nullptr;
+BeggsAndBrillAlgorithm * BeggsAndBrillAlgorithm::GetInstance(const IEnvironmentBeggsAndBrill * _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const IPVTBeggsAndBrill * _PVT_module, const int dot_count, const TubeStreamParaeters::NUnknownParameter N)
+{
+	if(singleton!= nullptr)
+		delete singleton;
+	return new BeggsAndBrillAlgorithm{ _ptr_environment, _ptr_tube, _PVT_module, dot_count, N };
+}
+
+void BeggsAndBrillAlgorithm::ChangeParameters(const IEnvironmentBeggsAndBrill * new_ptr_environment, const IReadableBeggsAndBrill * new_ptr_tube, const IPVTBeggsAndBrill * new_PVT_module, const int new_dot_count, const TubeStreamParaeters::NUnknownParameter new_N)
+{
+	ptr_environment = new_ptr_environment;
+	ptr_tube = new_ptr_tube;
+	PVT_module = new_PVT_module;
+	dot_count = new_dot_count;
+	N_unknown_parameter = new_N;
+}
 
 void BeggsAndBrillAlgorithm::Execute()
 {
@@ -46,9 +62,11 @@ void BeggsAndBrillAlgorithm::Execute()
 	std::cout << "Вывод P_result = " << P_result << std::endl;
 }
 
-BeggsAndBrillAlgorithm::BeggsAndBrillAlgorithm(const IEnvironmentBeggsAndBrill * _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const int _dot_count, const TubeStreamParaeters::NUnknownParameter _N) :
-	ptr_environment(_ptr_environment), ptr_tube(_ptr_tube), dot_count(_dot_count), N_unknown_parameter(_N)
+
+BeggsAndBrillAlgorithm::BeggsAndBrillAlgorithm(const IEnvironmentBeggsAndBrill * _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const IPVTBeggsAndBrill* _PVT_module, const int _dot_count, const TubeStreamParaeters::NUnknownParameter _N) :
+	ptr_environment(_ptr_environment), ptr_tube(_ptr_tube), PVT_module(_PVT_module), dot_count(_dot_count), N_unknown_parameter(_N)
 {
+
 }
 
 BeggsAndBrillAlgorithm::~BeggsAndBrillAlgorithm()
@@ -61,9 +79,6 @@ BeggsAndBrillAlgorithm::~BeggsAndBrillAlgorithm()
 double BeggsAndBrillAlgorithm::GetGradientPressure(const IReadableBeggsAndBrill & tube, const int& dot_index, const int& dot_count)
 {
 	double result = 0;
-	FlowBorders flow_borders;		//границы, расчитанные режимом потока	
-	double H_L_0;					//объёмное содержание жидкости в трубе
-	double N_R_e;					//число Рейнольдса
 
 	PipeParameters pipe_parameters;
 	ReadPipeParameters(tube,
@@ -75,10 +90,82 @@ double BeggsAndBrillAlgorithm::GetGradientPressure(const IReadableBeggsAndBrill 
 	FlowInfo waterFlow{ "water" };
 	FlowInfo gasFlow{ "gas" };
 
+	MixtureInfo mixture_info;
+
 	ReadFlowNormalDebits(tube,
 		oilFlow.volume_debit_normal,
 		waterFlow.volume_debit_normal,
 		gasFlow.volume_debit_normal);
+
+	VolumeCoefficientCount(*PVT_module, pipe_parameters,
+		oilFlow.volume_coefficient, waterFlow.volume_coefficient, gasFlow.volume_coefficient);
+
+	SolubilityCount(*PVT_module, pipe_parameters,
+		oilFlow.gas_solubility, waterFlow.gas_solubility);
+
+	VolumeDebitCount(oilFlow, waterFlow, gasFlow,
+		oilFlow.volume_debit, waterFlow.volume_debit, gasFlow.volume_debit);
+
+	ReducedSpeedCount(oilFlow, waterFlow, gasFlow,
+		pipe_parameters,
+		mixture_info.reduced_speed, gasFlow.reduced_speed);
+
+	MixtureSpeedCount(waterFlow, gasFlow,
+		mixture_info.speed);
+
+	VolumeContainityCount(oilFlow, waterFlow, gasFlow,
+		mixture_info.lambda);
+
+	ViscosityCount(*PVT_module,
+		oilFlow, waterFlow, gasFlow,
+		oilFlow.viscosity, waterFlow.viscosity, gasFlow.viscosity);
+
+	ToughnessCount(*PVT_module,
+		oilFlow, waterFlow, gasFlow,
+		oilFlow.toughness, waterFlow.toughness, gasFlow.toughness);
+
+	SurfaceTensionCount(*PVT_module,
+		oilFlow, waterFlow, gasFlow,
+		oilFlow.surface_tension, waterFlow.surface_tension);
+
+	MixtureViscosity_Toughness_SurfaceTension_Count(oilFlow, waterFlow, gasFlow,
+		mixture_info,
+		mixture_info.viscosity_secondphase, mixture_info.toughness_secondphase,
+		mixture_info.viscosity_liquid, mixture_info.toughness_liquid, mixture_info.surface_tension_liquid);
+
+	FroudNumberCount(mixture_info, pipe_parameters,
+		mixture_info.froud_number);
+
+	LiquidIndexCount(mixture_info,
+		mixture_info.liquid_speed_index);
+
+	FlowBorders flow_borders;					
+	FlowBordersCount(mixture_info,
+		flow_borders.L1, flow_borders.L2, flow_borders.L3, flow_borders.L4);
+
+	double volume_correction_liquid;
+	VolumeCorrectionLiquidCount(tube, mixture_info, flow_borders,
+		volume_correction_liquid);
+
+	PayneVolumeCorrectionCount(tube, volume_correction_liquid,
+		volume_correction_liquid);
+
+	double raynolds_number;
+	RaynoldsNumberCount(mixture_info, pipe_parameters,
+		raynolds_number);
+
+	double normalizing_friction_coefficient;
+	NormalizingFrictionCoefficientCount(tube, pipe_parameters, raynolds_number,
+		normalizing_friction_coefficient);
+
+	double friction_coefficient;
+	FrictionCoefficientCount(mixture_info, volume_correction_liquid, normalizing_friction_coefficient,
+		friction_coefficient);
+
+	PressureGradientCount(tube, pipe_parameters, mixture_info, gasFlow,
+		friction_coefficient, volume_correction_liquid,
+		result);
+
 	return result;
 }
 
@@ -131,7 +218,8 @@ void BeggsAndBrillAlgorithm::VolumeDebitCount(const FlowInfo& oilFlow, const Flo
 
 double BeggsAndBrillAlgorithm::ApCount(const double& diameter)
 {
-	return M_PI * pow(diameter, 2)*1.0e-5 / 4;
+	double result = M_PI * pow(diameter, 2)*1.0e-5 / 4;
+	return result;
 }
 
 void BeggsAndBrillAlgorithm::ReducedSpeedCount(const FlowInfo & oilFlow, const FlowInfo & waterFlow, const FlowInfo & gasFlow,
@@ -206,10 +294,12 @@ void BeggsAndBrillAlgorithm::LiquidIndexCount(const MixtureInfo & mixture, doubl
 
 void BeggsAndBrillAlgorithm::FlowBordersCount(const MixtureInfo & mixture, double & out_L1, double & out_L2, double & out_L3, double & out_L4)
 {
+	assert(mixture.lambda > 0 && "lambda<0 быть не может");
 	out_L1 = 316 * pow(mixture.lambda, 0.302);
 	out_L2 = 0.000925 * pow(mixture.lambda, -2.468);
 	out_L3 = 0.1 * pow(mixture.lambda, -1.452);
 	out_L4 = 0.5 * pow(mixture.lambda, -6.738);
+	
 }
 
 void BeggsAndBrillAlgorithm::VolumeCorrectionLiquidCount(const IReadableBeggsAndBrill & tube, const MixtureInfo & mixture, const FlowBorders& borders,
@@ -276,6 +366,7 @@ void BeggsAndBrillAlgorithm::NormalizingFrictionCoefficientCount(const IReadable
 		switch (rough_type) {
 		case TubeRoughType::Smooth:
 			if (raynolds_number < 1.0e+6) {
+				assert(raynolds_number > 0 && "raynolds_number<0 быть не может");
 				out_normalizing_friction_coefficient = 0.316*pow(raynolds_number, -0.25);
 			}
 			else {
@@ -286,7 +377,9 @@ void BeggsAndBrillAlgorithm::NormalizingFrictionCoefficientCount(const IReadable
 			double f = 0.08;
 			const int UNDECLARED_ITERATION_COUNT = 10;//количество итераций неизвестно (я не смог найти)
 			for (int i = 0; i < UNDECLARED_ITERATION_COUNT; ++i) {
-				f = 1 / (4 * pow(log(pipe_parameters.roughness / (3.7*pipe_parameters.diameter) + 2.51 / (raynolds_number*sqrt(f))),2));
+				double temp = log(pipe_parameters.roughness / (3.7*pipe_parameters.diameter) + 2.51 / (raynolds_number*sqrt(f)));
+				assert(temp > 0 && "некорректное вычисленное значение: temp < 0 быть не может");
+				f = 1 / (4 * pow(temp,2));
 			}
 			out_normalizing_friction_coefficient = f;
 			break;
@@ -359,8 +452,9 @@ double BeggsAndBrillAlgorithm::FlowState::GetVolumetric_content_liquid_angled(co
 
 double BeggsAndBrillAlgorithm::FlowState::GetVolumetric_content_liquid_not_angled()
 {
+	 assert(ptr_mixture->lambda > 0 && "Некорректное значение: ptr_mixture->lambda < 0");
+	 assert(ptr_mixture->froud_number > 0 && "Некорректное значение: ptr_mixture->froud_number < 0");
 	 double result = a * pow(ptr_mixture->lambda, b) / pow(ptr_mixture->froud_number, c);
-	 //assert(result >= ptr_mixture->lambda && "Не выполняется ограничение объёмного содержание, видимо что-то не так в расчётах(коде)...");
 	 return result;
 }
 

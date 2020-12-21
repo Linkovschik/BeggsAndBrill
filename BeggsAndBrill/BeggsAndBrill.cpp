@@ -2,11 +2,28 @@
 //
 
 #include <iostream>
-
+#include "TestBeggsAndBrillPVT.h"
+#include "TestBeggsAndBrillEnvironment.h"
+#include "TestBeggsAndBrillReadableTube.h"
+#include "BeggsAndBrillAlgorithm.h"
 int main()
 {
 	setlocale(LC_ALL, "Russian");
     std::cout << "Hello World!\n";
+
+	TestBeggsAndBrillEnvironment* environment = new TestBeggsAndBrillEnvironment();
+	TestBeggsAndBrillPVT* pvt_module = new TestBeggsAndBrillPVT();
+	TestBeggsAndBrillReadableTube* tube = new TestBeggsAndBrillReadableTube();
+
+	double dot_count = 10;
+	TubeStreamParaeters::NUnknownParameter n_unknown_parameters = TubeStreamParaeters::NUnknownParameter::First;
+	
+	BeggsAndBrillAlgorithm* algorithmInstance = BeggsAndBrillAlgorithm::GetInstance(environment,tube,pvt_module,dot_count,n_unknown_parameters);
+	algorithmInstance->Execute();
+
+	delete environment;
+	delete pvt_module;
+	delete tube;
 }
 
 // Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"

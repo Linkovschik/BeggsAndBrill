@@ -24,6 +24,15 @@
     <ClCompile Include="IHydraulicСomputationStrategy.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="TestBeggsAndBrillEnvironment.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="TestBeggsAndBrillPVT.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="TestBeggsAndBrillReadableTube.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BeggsAndBrillAlgorithm.h">
@@ -45,6 +54,15 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="IEnvironmentBeggsAndBrill.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="TestBeggsAndBrillEnvironment.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="TestBeggsAndBrillPVT.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="TestBeggsAndBrillReadableTube.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

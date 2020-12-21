@@ -154,6 +154,9 @@
     <ClCompile Include="BeggsAndBrill.cpp" />
     <ClCompile Include="BeggsAndBrillAlgorithm.cpp" />
     <ClCompile Include="IHydraulicСomputationStrategy.cpp" />
+    <ClCompile Include="TestBeggsAndBrillEnvironment.cpp" />
+    <ClCompile Include="TestBeggsAndBrillPVT.cpp" />
+    <ClCompile Include="TestBeggsAndBrillReadableTube.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BeggsAndBrillAlgorithm.h" />
@@ -163,6 +166,9 @@
     <ClInclude Include="IPVTBeggsAndBrill.h" />
     <ClInclude Include="IReadableBeggsAndBrill.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="TestBeggsAndBrillEnvironment.h" />
+    <ClInclude Include="TestBeggsAndBrillPVT.h" />
+    <ClInclude Include="TestBeggsAndBrillReadableTube.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="BeggsAndBrill.rc" />

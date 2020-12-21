@@ -15,17 +15,26 @@
 class BeggsAndBrillAlgorithm : public IHydraulic—omputationStrategy
 {
 public:
+	
+
+	BeggsAndBrillAlgorithm(BeggsAndBrillAlgorithm &other) = delete;
+	void operator=(const BeggsAndBrillAlgorithm &) = delete;
+	static BeggsAndBrillAlgorithm *GetInstance(const IEnvironmentBeggsAndBrill* _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const IPVTBeggsAndBrill* _PVT_module, const int dot_count, const TubeStreamParaeters::NUnknownParameter N);
+	virtual void ChangeParameters(const IEnvironmentBeggsAndBrill* new_ptr_environment, const IReadableBeggsAndBrill * new_ptr_tube, const IPVTBeggsAndBrill* new_PVT_module, const int new_dot_count, const TubeStreamParaeters::NUnknownParameter new_N);
 	//Execute - шаблонный метод, не должен переопредел€тьс€
 	virtual void Execute() override;
 protected:
-
+	static BeggsAndBrillAlgorithm* singleton;								//указатель на единственный возможный экземпл€р алгоритма
 	const IEnvironmentBeggsAndBrill* ptr_environment;						//внешн€€ среда
 	const IReadableBeggsAndBrill* ptr_tube;									//труба
-	const int dot_count;													//количество точек
-	const TubeStreamParaeters::NUnknownParameter N_unknown_parameter;		//неизвестный и неописанный параметр n (1,2,3,4) в пункте 33
+	const IPVTBeggsAndBrill* PVT_module;									//PVT модуль
+
+    int dot_count;															//количество точек
+	TubeStreamParaeters::NUnknownParameter N_unknown_parameter;				//неизвестный и неописанный параметр n (1,2,3,4) в пункте 33
+	
 
 	//конструктор
-	BeggsAndBrillAlgorithm(const IEnvironmentBeggsAndBrill* _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const int dot_count, const TubeStreamParaeters::NUnknownParameter N);
+	BeggsAndBrillAlgorithm(const IEnvironmentBeggsAndBrill* _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const IPVTBeggsAndBrill* _PVT_module, const int dot_count, const TubeStreamParaeters::NUnknownParameter N);
 
 	//деструктор
 	virtual ~BeggsAndBrillAlgorithm();
