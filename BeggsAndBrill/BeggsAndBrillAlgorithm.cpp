@@ -1,14 +1,73 @@
 #include "BeggsAndBrillAlgorithm.h"
 
 
-void BeggsAndBrillAlgorithm::Execute(const IReadableBeggsAndBrill& tube)
+void BeggsAndBrillAlgorithm::Execute()
 {
+	using namespace TubeStreamParaeters;
+	double P_result; //результат работы алгоритма - давление (не совсем понятно, что значит P_out и P_wf, нужно больше данных)
+	
+	double P_wh = ptr_tube->GetPwh();
+	double ro_0 = ptr_environment->GetNormalToughnessAround();
+	double T_0 = ptr_environment->GetNormalTemperatureAround();
+	double P_0 = ptr_environment->GetNormalPressureAround();
+	double z_an = ptr_environment->GetCurrentSupercompressibilityCoefficient();
+	double T_an = ptr_environment->GetCurrentTemperatureAround();
+	double P_an = ptr_environment->GetCurrentPressureAround();
+	double H_dyn = ptr_tube->GetHdyn();
+
+	double gradient_pressure_sum = 0;
+	for (int i = 1; i <= dot_count; ++i) {
+		gradient_pressure_sum += GetGradientPressure(*ptr_tube, i, dot_count);
+	}
+	double deltL = ptr_tube->GetLength() / dot_count;
+
+	switch (N_unknown_parameter)
+	{
+	case NUnknownParameter::First:
+		P_result = P_wh + gradient_pressure_sum * deltL;
+		break;
+	case NUnknownParameter::Second:
+		P_result = P_wh + gradient_pressure_sum * deltL;
+		break;
+	case NUnknownParameter::Third:
+		P_result = P_an +
+			(P_an*ro_0*T_0*H_dyn*PhysicConstants::g) /
+			(z_an*T_an*P_0*1.0e+7)
+			+ gradient_pressure_sum * deltL;
+		break;
+	case NUnknownParameter::Forth:
+		P_result = P_wh + gradient_pressure_sum * deltL
+			- gradient_pressure_sum * deltL;
+		break;
+	default:
+		P_result = 0;
+		break;
+	}
+	std::cout << "Вывод P_result = " << P_result << std::endl;
+}
+
+BeggsAndBrillAlgorithm::BeggsAndBrillAlgorithm(const IEnvironmentBeggsAndBrill * _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const int _dot_count, const TubeStreamParaeters::NUnknownParameter _N) :
+	ptr_environment(_ptr_environment), ptr_tube(_ptr_tube), dot_count(_dot_count), N_unknown_parameter(_N)
+{
+}
+
+BeggsAndBrillAlgorithm::~BeggsAndBrillAlgorithm()
+{
+	ptr_environment = nullptr;
+	ptr_tube = nullptr;
+}
+
+
+double BeggsAndBrillAlgorithm::GetGradientPressure(const IReadableBeggsAndBrill & tube, const int& dot_index, const int& dot_count)
+{
+	double result = 0;
 	FlowBorders flow_borders;		//границы, расчитанные режимом потока	
 	double H_L_0;					//объёмное содержание жидкости в трубе
 	double N_R_e;					//число Рейнольдса
 
 	PipeParameters pipe_parameters;
 	ReadPipeParameters(tube,
+		dot_index, dot_count,
 		pipe_parameters.diameter, pipe_parameters.roughness,
 		pipe_parameters.temperature, pipe_parameters.pressure);
 
@@ -20,21 +79,17 @@ void BeggsAndBrillAlgorithm::Execute(const IReadableBeggsAndBrill& tube)
 		oilFlow.volume_debit_normal,
 		waterFlow.volume_debit_normal,
 		gasFlow.volume_debit_normal);
-
+	return result;
 }
 
-void BeggsAndBrillAlgorithm::Update()
-{
-
-}
-
-void BeggsAndBrillAlgorithm::ReadPipeParameters(const IReadableBeggsAndBrill & tube,
+void BeggsAndBrillAlgorithm::ReadPipeParameters(const IReadableBeggsAndBrill & tube, 
+	const int& dot_index, const int& dot_count,
 	double & out_diameter, double & out_roughness, double & out_temperature, double & out_pressure)
 {
 	out_diameter = tube.GetDiameter();
 	out_roughness = tube.GetRoughness();
-	out_temperature = tube.GetTemperature();
-	out_pressure = tube.GetPressure();
+	out_temperature = tube.GetTemperature(dot_index, dot_count);
+	out_pressure = tube.GetPressure(dot_index, dot_count);
 }
 
 void BeggsAndBrillAlgorithm::ReadFlowNormalDebits(const IReadableBeggsAndBrill & tube, 

@@ -44,6 +44,9 @@
     <ClInclude Include="IHydraulicСomputationStrategy.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="IEnvironmentBeggsAndBrill.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="BeggsAndBrill.rc">

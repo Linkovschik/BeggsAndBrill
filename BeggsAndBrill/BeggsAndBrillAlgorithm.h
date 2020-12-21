@@ -5,9 +5,10 @@
 #include <cmath>
 #include <vector>
 #include <cassert>
-#include "IHydraulicСomputationStrategy.h"
 #include "Constants.h"
+#include "IEnvironmentBeggsAndBrill.h"
 #include "IReadableBeggsAndBrill.h"
+#include "IHydraulicСomputationStrategy.h"
 #include "IPVTBeggsAndBrill.h"
 
 
@@ -15,12 +16,16 @@ class BeggsAndBrillAlgorithm : public IHydraulicСomputationStrategy
 {
 public:
 	//Execute - шаблонный метод, не должен переопределяться
-	virtual void Execute(const IReadableBeggsAndBrill& tube) override;
+	virtual void Execute() override;
 protected:
-	std::string file_name;
+
+	const IEnvironmentBeggsAndBrill* ptr_environment;						//внешняя среда
+	const IReadableBeggsAndBrill* ptr_tube;									//труба
+	const int dot_count;													//количество точек
+	const TubeStreamParaeters::NUnknownParameter N_unknown_parameter;		//неизвестный и неописанный параметр n (1,2,3,4) в пункте 33
 
 	//конструктор
-	BeggsAndBrillAlgorithm();
+	BeggsAndBrillAlgorithm(const IEnvironmentBeggsAndBrill* _ptr_environment, const IReadableBeggsAndBrill * _ptr_tube, const int dot_count, const TubeStreamParaeters::NUnknownParameter N);
 
 	//деструктор
 	virtual ~BeggsAndBrillAlgorithm();
@@ -131,10 +136,13 @@ protected:
 		virtual double GetAngleCorrectionCoefficient(const IReadableBeggsAndBrill & tube) override;
 	};
 private:
-	virtual void Update() override;
+
+	//расчёт градиента давления
+	double GetGradientPressure(const IReadableBeggsAndBrill& tube, const int& dot_index, const int& dot_count);
 
 	//считывание начальных значений (параметров трубы)
 	virtual void ReadPipeParameters(const IReadableBeggsAndBrill& tube, 
+		const int& dot_index, const int& dot_count,
 		double& out_diameter, double& out_roughness, double& out_temperature, double& out_pressure);
 
 	//считывание параметров потока
@@ -236,4 +244,6 @@ private:
 		const PipeParameters& pip_parameters, const MixtureInfo& mixture, const FlowInfo& gasFlow,
 		const double& friction_coefficient, const double& volume_correction_liquid,
 		double& out_pressure_gradient);
+
+	
 }; 

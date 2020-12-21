@@ -158,6 +158,7 @@
   <ItemGroup>
     <ClInclude Include="BeggsAndBrillAlgorithm.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="IEnvironmentBeggsAndBrill.h" />
     <ClInclude Include="IHydraulicСomputationStrategy.h" />
     <ClInclude Include="IPVTBeggsAndBrill.h" />
     <ClInclude Include="IReadableBeggsAndBrill.h" />

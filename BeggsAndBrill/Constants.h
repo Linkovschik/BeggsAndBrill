@@ -23,4 +23,11 @@ namespace TubeStreamParaeters
 		Smooth,
 		Rough
 	};
+
+	enum class NUnknownParameter {
+		First,
+		Second,
+		Third,
+		Forth
+	};
 }
